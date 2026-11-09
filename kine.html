@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>KineTrack - Suivi de Musculation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            accent: '#10b981',
+                            warning: '#f59e0b',
+                            danger: '#ef4444'
+                        },
+                        dark: {
+                            bg: '#090d16',
+                            card: '#131b2e',
+                            cardHover: '#1c2742',
+                            border: '#23304d',
+                            textMuted: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'SF Pro Text', 'Segoe UI', 'Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            background-color: #090d16;
+            color: #f8fafc;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-card {
+            background: rgba(19, 27, 46, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-nav {
+            background: rgba(9, 13, 22, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans flex flex-col justify-between pb-24 selection:bg-brand-500 selection:text-white">
+
+    <!-- Header top bar -->
+    <header class="sticky top-0 z-40 px-4 pt-4 pb-3 glass-card border-b border-gray-800">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-dumbbell text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg tracking-tight leading-none bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">KineTrack</h1>
+                    <p class="text-xs text-dark-textMuted font-medium mt-0.5" id="header-subtitle">Prêt pour votre séance ?</p>
+                </div>
+            </div>
+            
+            <button onclick="openCreateExerciseModal()" class="w-9 h-9 rounded-full bg-brand-600/20 text-brand-500 border border-brand-500/30 flex items-center justify-center hover:bg-brand-600 hover:text-white transition-all active:scale-95" title="Créer un exercice">
+                <i class="fa-solid fa-plus text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-md w-full mx-auto px-4 pt-4 flex-1">
+        
+        <!-- ================= PAGE 1: SÉANCE ACTIVE / CRÉATION ================= -->
+        <section id="tab-workout" class="space-y-5">
+            <!-- Dynamic active session status banner -->
+            <div id="active-session-banner" class="hidden glass-card rounded-2xl p-4 border border-brand-500/30 relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-brand-500/10 rounded-full blur-xl"></div>
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 mb-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Séance en cours
+                        </span>
+                        <h2 id="workout-title-display" class="text-xl font-bold text-white">Entraînement</h2>
+                        <p id="workout-timer-display" class="text-xs text-brand-500 font-mono font-medium mt-0.5"><i class="fa-regular fa-clock mr-1"></i> 00:00:00</p>
+                    </div>
+                    <button onclick="finishWorkout()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 transition active:scale-95">
+                        <i class="fa-solid fa-check mr-1"></i> Terminer
+                    </button>
+                </div>
+                <input type="text" id="workout-notes-input" placeholder="Notes de séance (ex: Forme olympique, banc libre...)" class="w-full mt-2 bg-dark-bg/60 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-brand-500">
+            </div>
+
+            <!-- Start / Create workout CTA if none active -->
+            <div id="no-active-session" class="glass-card rounded-2xl p-6 text-center space-y-4">
+                <div class="w-16 h-16 rounded-2xl bg-brand-500/10 text-brand-500 flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Démarrer une séance</h3>
+                    <p class="text-xs text-dark-textMuted mt-1">Saisissez un nom ou lancez une séance pour ajouter vos exercices et séries.</p>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="new-workout-name" placeholder="Nom (ex: Leg Day / Upper Push)" class="flex-1 bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                    <button onclick="startWorkout()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-brand-600/30 transition active:scale-95 whitespace-nowrap">
+                        <i class="fa-solid fa-play mr-1"></i> Démarrer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workout Exercise List -->
+            <div id="workout-exercises-container" class="space-y-4">
+                <!-- Dynamically populated exercises -->
+            </div>
+
+            <!-- Add Exercise to Workout Button -->
+            <div id="add-to-workout-btn-wrapper" class="hidden">
+                <button onclick="openSelectExerciseModal()" class="w-full py-3.5 border-2 border-dashed border-dark-border hover:border-brand-500/50 rounded-2xl text-dark-textMuted hover:text-brand-500 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-98">
+                    <i class="fa-solid fa-plus-circle text-base"></i> Ajouter un exercice à la séance
+                </button>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 2: BANQUE D'EXERCICES ================= -->
+        <section id="tab-bank" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Banque d'exercices</h2>
+                    <p class="text-xs text-dark-textMuted">Gérez votre répertoire de mouvements</p>
+                </div>
+                <button onclick="openCreateExerciseModal()" class="px-3 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-500/20 active:scale-95 flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> Créer
+                </button>
+            </div>
+
+            <!-- Search & Filter Bar -->
+            <div class="space-y-2">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-textMuted text-xs"></i>
+                    <input type="text" id="exercise-search" oninput="renderExerciseBank()" placeholder="Rechercher un exercice..." class="w-full bg-dark-card border border-dark-border rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-dark-textMuted focus:outline-none focus:border-brand-500">
+                </div>
+                
+                <!-- Category Filter Pills -->
+                <div class="flex gap-1.5 overflow-x-auto hide-scrollbar pt-1 pb-1" id="category-filters">
+                    <!-- Dynamic categories -->
+                </div>
+            </div>
+
+            <!-- Exercise List -->
+            <div id="exercise-bank-list" class="space-y-2.5">
+                <!-- Dynamically rendered -->
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 3: HISTORIQUE DES SÉANCES ================= -->
+        <section id="tab-history" class="hidden space-y-4">
+            <div>
+                <h2 class="text-lg font-bold text-white">Historique</h2>
+                <p class="text-xs text-dark-textMuted">Consultez vos séances enregistrées</p>
+            </div>
+
+            <div id="history-list" class="space-y-3">
+                <!-- Dynamically rendered -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (iOS Style) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-nav px-6 py-2.5">
+        <div class="max-w-md mx-auto flex justify-around items-center">
+            <button onclick="switchTab('workout')" id="nav-btn-workout" class="flex flex-col items-center gap-1 text-brand-500 transition-all">
+                <div class="w-6 h-6 flex items-center justify-center">
+                    <i class="fa-solid fa-dumbbell text-lg"></i>
+                </div>
+                <span class="text-[10px] font-semibold tracking-wider">SÉANCE</span>
+            </button>
+
+            <button onclick="switchTab('bank')" id="nav-btn-bank" class="flex flex-col items-center gap-1 text-dark-textMuted hover:text-white transition-all">
+                <div class="w-6 h-6 flex items-center justify-center">
+                    <i class="fa-solid fa-book-bookmark text-lg"></i>
+                </div>
+                <span class="text-[10px] font-semibold tracking-wider">EXERCICES</span>
+            </button>
+
+            <button onclick="switchTab('history')" id="nav-btn-history" class="flex flex-col items-center gap-1 text-dark-textMuted hover:text-white transition-all">
+                <div class="w-6 h-6 flex items-center justify-center">
+                    <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                </div>
+                <span class="text-[10px] font-semibold tracking-wider">HISTORIQUE</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Modal 1: Créer un exercice -->
+    <div id="modal-create-exercise" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
+            <div class="flex justify-between items-center border-b border-dark-border pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-brand-500"></i> Nouvel Exercice
+                </h3>
+                <button onclick="closeModal('modal-create-exercise')" class="w-8 h-8 rounded-full bg-dark-bg text-gray-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <form id="form-create-exercise" onsubmit="handleCreateExercise(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-dark-textMuted uppercase mb-1">Nom de l'exercice *</label>
+                    <input type="text" id="new-ex-name" required placeholder="ex: Presse à cuisses, Biceps Curl..." class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-dark-textMuted uppercase mb-1">Groupe musculaire / Catégorie *</label>
+                    <select id="new-ex-category" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <option value="Jambes">Jambes</option>
+                        <option value="Fessiers">Fessiers</option>
+                        <option value="Pectoraux">Pectoraux</option>
+                        <option value="Dos">Dos</option>
+                        <option value="Épaules">Épaules</option>
+                        <option value="Bras">Bras (Biceps / Triceps)</option>
+                        <option value="Abdominaux">Abdominaux</option>
+                        <option value="Cardio / Autre">Cardio / Autre</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-dark-textMuted uppercase mb-1">Équipement / Notes (Facultatif)</label>
+                    <input type="text" id="new-ex-notes" placeholder="ex: Machine guidée, poulie unilatérale..." class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeModal('modal-create-exercise')" class="flex-1 py-2.5 bg-dark-bg text-dark-textMuted font-semibold rounded-xl text-xs">Annuler</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs shadow-md shadow-brand-500/30">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Sélectionner un exercice pour la séance -->
+    <div id="modal-select-exercise" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col space-y-4">
+            <div class="flex justify-between items-center border-b border-dark-border pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-brand-500"></i> Choisir un exercice
+                </h3>
+                <button onclick="closeModal('modal-select-exercise')" class="w-8 h-8 rounded-full bg-dark-bg text-gray-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-dark-textMuted text-xs"></i>
+                <input type="text" id="select-ex-search" oninput="renderSelectableExercises()" placeholder="Chercher dans la banque..." class="w-full bg-dark-bg border border-dark-border rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-dark-textMuted focus:outline-none focus:border-brand-500">
+            </div>
+
+            <div id="select-exercise-list" class="flex-1 overflow-y-auto space-y-2 pr-1 hide-scrollbar">
+                <!-- Dynamically rendered -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Détails séance historique -->
+    <div id="modal-history-detail" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col space-y-4">
+            <div class="flex justify-between items-center border-b border-dark-border pb-3">
+                <div>
+                    <h3 id="history-detail-title" class="text-base font-bold text-white">Détails de la séance</h3>
+                    <p id="history-detail-date" class="text-xs text-dark-textMuted"></p>
+                </div>
+                <button onclick="closeModal('modal-history-detail')" class="w-8 h-8 rounded-full bg-dark-bg text-gray-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div id="history-detail-content" class="flex-1 overflow-y-auto space-y-4 pr-1 hide-scrollbar">
+                <!-- Dynamically filled -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-gray-700 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 transform transition-all duration-300 opacity-0 pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">Action effectuée</span>
+    </div>
+
+
+    <!-- APP LOGIC SCRIPT -->
+    <script>
+        // --- INITIAL DATA & DEFAULT BANK ---
+        const DEFAULT_EXERCISES = [
+            { id: 'ex_1', name: 'Presse à cuisses', category: 'Jambes', notes: 'Possibilité 1 jambe ou 2 jambes' },
+            { id: 'ex_2', name: 'Leg Extension', category: 'Jambes', notes: 'Isolé quadriceps' },
+            { id: 'ex_3', name: 'Développé couché', category: 'Pectoraux', notes: 'Barre ou haltères' },
+            { id: 'ex_4', name: 'Curl Biceps Poulie', category: 'Bras', notes: 'Unilatéral ou bilatéral' },
+            { id: 'ex_5', name: 'Extension Triceps poulie', category: 'Bras', notes: 'Corde ou poignée unilatérale' },
+            { id: 'ex_6', name: 'Squat barre', category: 'Jambes', notes: 'Charge guidée ou libre' },
+            { id: 'ex_7', name: 'Traction pronation', category: 'Dos', notes: 'Poids du corps / Lesté' },
+            { id: 'ex_8', name: 'Élévations latérales', category: 'Épaules', notes: 'Haltères ou poulie' }
+        ];
+
+        let appData = {
+            exerciseBank: [],
+            activeWorkout: null,
+            workoutHistory: []
+        };
+
+        let selectedCategoryFilter = 'Tous';
+        let timerInterval = null;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            loadLocalStorageData();
+            renderCategoryFilters();
+            renderExerciseBank();
+            renderActiveWorkout();
+            renderWorkoutHistory();
+        };
+
+        function loadLocalStorageData() {
+            const saved = localStorage.getItem('kinetrack_data') || localStorage.getItem('fittrack_data');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Erreur LocalStorage", e);
+                }
+            }
+            if (!appData.exerciseBank || appData.exerciseBank.length === 0) {
+                appData.exerciseBank = [...DEFAULT_EXERCISES];
+                saveLocalStorageData();
+            }
+        }
+
+        function saveLocalStorageData() {
+            localStorage.setItem('kinetrack_data', JSON.stringify(appData));
+        }
+
+        // --- NAVIGATION TABS ---
+        function switchTab(tabName) {
+            ['workout', 'bank', 'history'].forEach(t => {
+                const sec = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                    btn.classList.remove('text-dark-textMuted');
+                    btn.classList.add('text-brand-500');
+                } else {
+                    sec.classList.add('hidden');
+                    btn.classList.remove('text-brand-500');
+                    btn.classList.add('text-dark-textMuted');
+                }
+            });
+        }
+
+        // --- TOAST UTILITY ---
+        function showToast(message, icon = 'fa-circle-check', isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.textContent = message;
+            iconEl.className = `fa-solid ${icon} ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+            
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // --- LATERAL STATE HELPER FUNCTIONS (Bilatéral / Gauche / Droite) ---
+        function getLateralLabel(mode, category = '') {
+            const isLeg = (category || '').toLowerCase().includes('jambe') || (category || '').toLowerCase().includes('fessier');
+            const memberType = isLeg ? 'Jambe' : 'Bras';
+
+            switch(mode) {
+                case 'left': return `${memberType} G.`;
+                case 'right': return `${memberType} D.`;
+                case 'bilateral': default: return 'Bilatéral';
+            }
+        }
+
+        function getLateralBadgeStyle(mode) {
+            switch(mode) {
+                case 'left': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                case 'right': return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
+                case 'bilateral': default: return 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+            }
+        }
+
+        function getLateralIcon(mode, category = '') {
+            const isLeg = (category || '').toLowerCase().includes('jambe') || (category || '').toLowerCase().includes('fessier');
+            
+            const colorLeft = mode === 'left' ? '#f59e0b' : (mode === 'bilateral' ? '#a5b4fc' : '#475569');
+            const colorRight = mode === 'right' ? '#06b6d4' : (mode === 'bilateral' ? '#a5b4fc' : '#475569');
+            
+            const fillLeft = mode === 'left' ? '#f59e0b' : (mode === 'bilateral' ? '#818cf8' : 'none');
+            const fillRight = mode === 'right' ? '#06b6d4' : (mode === 'bilateral' ? '#818cf8' : 'none');
+            
+            const opacityLeft = (mode === 'right') ? 'opacity="0.3"' : 'opacity="1"';
+            const opacityRight = (mode === 'left') ? 'opacity="0.3"' : 'opacity="1"';
+
+            if (isLeg) {
+                return `<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 3.5h10" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                    <g ${opacityLeft}>
+                        <path d="M7.5 4L6 11.5L7 20.5H9.5L8.5 11.5L9.5 4H7.5Z" fill="${fillLeft}" stroke="${colorLeft}" stroke-width="1.5" stroke-linejoin="round" />
+                        <circle cx="7.5" cy="11.5" r="1" fill="${colorLeft}" />
+                    </g>
+                    <g ${opacityRight}>
+                        <path d="M14.5 4L15.5 11.5L14.5 20.5H17L18 11.5L16.5 4H14.5Z" fill="${fillRight}" stroke="${colorRight}" stroke-width="1.5" stroke-linejoin="round" />
+                        <circle cx="16.5" cy="11.5" r="1" fill="${colorRight}" />
+                    </g>
+                </svg>`;
+            } else {
+                return `<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5h8" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                    <g ${opacityLeft}>
+                        <path d="M7.5 5.5L4.5 9L3.5 16L7 17.5L7.5 12L9 8L7.5 5.5Z" fill="${fillLeft}" stroke="${colorLeft}" stroke-width="1.5" stroke-linejoin="round"/>
+                        <circle cx="7" cy="18" r="1" fill="${colorLeft}"/>
+                    </g>
+                    <g ${opacityRight}>
+                        <path d="M16.5 5.5L19.5 9L20.5 16L17 17.5L16.5 12L15 8L16.5 5.5Z" fill="${fillRight}" stroke="${colorRight}" stroke-width="1.5" stroke-linejoin="round"/>
+                        <circle cx="17" cy="18" r="1" fill="${colorRight}"/>
+                    </g>
+                </svg>`;
+            }
+        }
+
+        // --- BANQUE D'EXERCICES ---
+        function renderCategoryFilters() {
+            const categories = ['Tous', 'Jambes', 'Fessiers', 'Pectoraux', 'Dos', 'Épaules', 'Bras', 'Abdominaux', 'Cardio / Autre'];
+            const container = document.getElementById('category-filters');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="setCategoryFilter('${cat}')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedCategoryFilter === cat ? 'bg-brand-600 text-white shadow-sm' : 'bg-dark-card text-dark-textMuted border border-dark-border hover:text-white'}">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function setCategoryFilter(cat) {
+            selectedCategoryFilter = cat;
+            renderCategoryFilters();
+            renderExerciseBank();
+        }
+
+        function renderExerciseBank() {
+            const search = (document.getElementById('exercise-search').value || '').toLowerCase();
+            const container = document.getElementById('exercise-bank-list');
+
+            const filtered = appData.exerciseBank.filter(ex => {
+                const matchesCat = selectedCategoryFilter === 'Tous' || ex.category === selectedCategoryFilter;
+                const matchesSearch = ex.name.toLowerCase().includes(search) || (ex.notes && ex.notes.toLowerCase().includes(search));
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-dark-textMuted text-xs">Aucun exercice trouvé.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(ex => `
+                <div class="glass-card rounded-xl p-3.5 flex items-center justify-between border border-dark-border hover:border-brand-500/40 transition">
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-bold text-sm text-white">${escapeHtml(ex.name)}</h4>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-dark-bg text-brand-500 border border-brand-500/20">${ex.category}</span>
+                        </div>
+                        ${ex.notes ? `<p class="text-xs text-dark-textMuted"><i class="fa-regular fa-note-sticky mr-1"></i>${escapeHtml(ex.notes)}</p>` : ''}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${appData.activeWorkout ? `
+                            <button onclick="addExerciseToWorkoutDirect('${ex.id}')" class="px-2.5 py-1.5 rounded-lg bg-brand-600/20 text-brand-400 hover:bg-brand-600 hover:text-white text-xs font-semibold transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Ajouter
+                            </button>
+                        ` : ''}
+                        <button onclick="deleteExerciseFromBank('${ex.id}')" class="w-8 h-8 rounded-lg bg-dark-bg text-dark-textMuted hover:text-rose-400 transition flex items-center justify-center">
+                            <i class="fa-regular fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openCreateExerciseModal() {
+            document.getElementById('form-create-exercise').reset();
+            document.getElementById('modal-create-exercise').classList.remove('hidden');
+        }
+
+        function handleCreateExercise(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-ex-name').value.trim();
+            const category = document.getElementById('new-ex-category').value;
+            const notes = document.getElementById('new-ex-notes').value.trim();
+
+            if (!name) return;
+
+            const newEx = {
+                id: 'ex_' + Date.now(),
+                name,
+                category,
+                notes
+            };
+
+            appData.exerciseBank.unshift(newEx);
+            saveLocalStorageData();
+            renderExerciseBank();
+            closeModal('modal-create-exercise');
+            showToast(`Exercice "${name}" créé !`);
+        }
+
+        function deleteExerciseFromBank(id) {
+            appData.exerciseBank = appData.exerciseBank.filter(e => e.id !== id);
+            saveLocalStorageData();
+            renderExerciseBank();
+            showToast(`Exercice supprimé`, 'fa-trash-can', true);
+        }
+
+        // --- SÉANCE ACTIVE ---
+        function startWorkout() {
+            const nameInput = document.getElementById('new-workout-name');
+            const name = nameInput.value.trim() || 'Séance du ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+            appData.activeWorkout = {
+                id: 'wk_' + Date.now(),
+                name: name,
+                startTime: Date.now(),
+                notes: '',
+                exercises: []
+            };
+
+            saveLocalStorageData();
+            renderActiveWorkout();
+            showToast(`Séance démarrée !`, 'fa-play');
+        }
+
+        function renderActiveWorkout() {
+            const noSessionEl = document.getElementById('no-active-session');
+            const bannerEl = document.getElementById('active-session-banner');
+            const addBtnWrapper = document.getElementById('add-to-workout-btn-wrapper');
+            const container = document.getElementById('workout-exercises-container');
+            const headerSub = document.getElementById('header-subtitle');
+
+            if (!appData.activeWorkout) {
+                noSessionEl.classList.remove('hidden');
+                bannerEl.classList.add('hidden');
+                addBtnWrapper.classList.add('hidden');
+                container.innerHTML = '';
+                headerSub.textContent = 'Prêt pour votre séance ?';
+                if (timerInterval) clearInterval(timerInterval);
+                return;
+            }
+
+            noSessionEl.classList.add('hidden');
+            bannerEl.classList.remove('hidden');
+            addBtnWrapper.classList.remove('hidden');
+            document.getElementById('workout-title-display').textContent = appData.activeWorkout.name;
+            document.getElementById('workout-notes-input').value = appData.activeWorkout.notes || '';
+            
+            document.getElementById('workout-notes-input').oninput = function(e) {
+                if (appData.activeWorkout) {
+                    appData.activeWorkout.notes = e.target.value;
+                    saveLocalStorageData();
+                }
+            };
+
+            headerSub.textContent = `En cours: ${appData.activeWorkout.name}`;
+            startWorkoutTimer();
+
+            if (appData.activeWorkout.exercises.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 glass-card rounded-2xl border border-dashed border-dark-border space-y-3">
+                        <i class="fa-solid fa-dumbbell text-3xl text-dark-textMuted/50"></i>
+                        <p class="text-xs text-dark-textMuted">Aucun exercice dans cette séance.</p>
+                        <button onclick="openSelectExerciseModal()" class="px-4 py-2 bg-brand-600/20 text-brand-400 border border-brand-500/30 rounded-xl text-xs font-semibold hover:bg-brand-600 hover:text-white transition">
+                            Ajouter un premier exercice
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appData.activeWorkout.exercises.map((exItem, exIndex) => {
+                return `
+                    <div class="glass-card rounded-2xl p-4 border border-dark-border space-y-3">
+                        <div class="flex items-center justify-between border-b border-dark-border pb-2.5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-brand-600/20 text-brand-400 text-xs font-bold flex items-center justify-center">${exIndex + 1}</span>
+                                <div>
+                                    <h3 class="font-bold text-sm text-white leading-snug">${escapeHtml(exItem.name)}</h3>
+                                    <span class="text-[10px] text-dark-textMuted font-medium">${exItem.category}</span>
+                                </div>
+                            </div>
+                            <button onclick="removeExerciseFromWorkout(${exIndex})" class="text-dark-textMuted hover:text-rose-400 p-1 transition">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-12 text-[10px] font-bold text-dark-textMuted uppercase px-1">
+                                <span class="col-span-2 text-center">Série</span>
+                                <span class="col-span-4 text-center">Type</span>
+                                <span class="col-span-2 text-center">Reps</span>
+                                <span class="col-span-2 text-center">Kg</span>
+                                <span class="col-span-2 text-center">OK</span>
+                            </div>
+
+                            ${exItem.sets.map((set, setIndex) => {
+                                const mode = set.lateralMode || 'bilateral';
+                                return `
+                                <div class="grid grid-cols-12 gap-1.5 items-center bg-dark-bg/60 p-2 rounded-xl border border-dark-border/60 ${set.completed ? 'border-emerald-500/30 bg-emerald-950/10' : ''}">
+                                    <div class="col-span-2 text-center">
+                                        <span class="text-xs font-bold text-gray-400">${setIndex + 1}</span>
+                                    </div>
+
+                                    <div class="col-span-4 flex justify-center">
+                                        <button onclick="cycleLateralMode(${exIndex}, ${setIndex})" 
+                                                title="Mode d'exécution (Bilatéral ➔ Gauche ➔ Droite)"
+                                                class="px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1.5 transition-all ${getLateralBadgeStyle(mode)}">
+                                            ${getLateralIcon(mode, exItem.category)}
+                                            <span>${getLateralLabel(mode, exItem.category)}</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="col-span-2">
+                                        <input type="number" pattern="[0-9]*" value="${set.reps !== null && set.reps !== undefined ? set.reps : ''}" 
+                                               placeholder="0"
+                                               onchange="updateSetVal(${exIndex}, ${setIndex}, 'reps', this.value)"
+                                               class="w-full text-center bg-dark-card border border-dark-border rounded-lg py-1 text-xs text-white font-semibold focus:outline-none focus:border-brand-500">
+                                    </div>
+
+                                    <div class="col-span-2">
+                                        <input type="number" step="0.5" pattern="[0-9]*" value="${set.weight !== null && set.weight !== undefined ? set.weight : ''}" 
+                                               placeholder="0"
+                                               onchange="updateSetVal(${exIndex}, ${setIndex}, 'weight', this.value)"
+                                               class="w-full text-center bg-dark-card border border-dark-border rounded-lg py-1 text-xs text-white font-semibold focus:outline-none focus:border-brand-500">
+                                    </div>
+
+                                    <div class="col-span-2 flex justify-center">
+                                        <button onclick="toggleSetComplete(${exIndex}, ${setIndex})" class="w-7 h-7 rounded-lg flex items-center justify-center transition ${set.completed ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30' : 'bg-dark-card text-dark-textMuted border border-dark-border hover:border-gray-500'}">
+                                            <i class="fa-solid fa-check text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `}).join('')}
+                        </div>
+
+                        <div class="pt-1 flex items-center justify-between">
+                            <button onclick="addSetToExercise(${exIndex})" class="text-xs font-semibold text-brand-400 hover:text-brand-300 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-brand-500/10 transition">
+                                <i class="fa-solid fa-plus text-[10px]"></i> Ajouter une série
+                            </button>
+
+                            ${exItem.sets.length > 0 ? `
+                                <button onclick="removeLastSet(${exIndex})" class="text-[11px] text-dark-textMuted hover:text-rose-400 transition">
+                                    Retirer la dernière
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function startWorkoutTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            const timerEl = document.getElementById('workout-timer-display');
+            
+            function update() {
+                if (!appData.activeWorkout) return;
+                const elapsedSeconds = Math.floor((Date.now() - appData.activeWorkout.startTime) / 1000);
+                const hrs = Math.floor(elapsedSeconds / 3600);
+                const mins = Math.floor((elapsedSeconds % 3600) / 60);
+                const secs = elapsedSeconds % 60;
+                timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i> ${hrs > 0 ? String(hrs).padStart(2, '0') + ':' : ''}${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+
+            update();
+            timerInterval = setInterval(update, 1000);
+        }
+
+        function openSelectExerciseModal() {
+            renderSelectableExercises();
+            document.getElementById('modal-select-exercise').classList.remove('hidden');
+        }
+
+        function renderSelectableExercises() {
+            const search = (document.getElementById('select-ex-search').value || '').toLowerCase();
+            const container = document.getElementById('select-exercise-list');
+
+            const filtered = appData.exerciseBank.filter(ex => ex.name.toLowerCase().includes(search) || ex.category.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-center py-4 text-xs text-dark-textMuted">Aucun résultat.</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(ex => `
+                <div onclick="addExerciseToWorkoutDirect('${ex.id}')" class="p-3 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-between hover:border-brand-500 cursor-pointer transition">
+                    <div>
+                        <h4 class="font-bold text-sm text-white">${escapeHtml(ex.name)}</h4>
+                        <span class="text-[10px] text-brand-400 font-medium">${ex.category}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-dark-textMuted"></i>
+                </div>
+            `).join('');
+        }
+
+        function addExerciseToWorkoutDirect(exId) {
+            if (!appData.activeWorkout) {
+                startWorkout();
+            }
+
+            const exBankItem = appData.exerciseBank.find(e => e.id === exId);
+            if (!exBankItem) return;
+
+            appData.activeWorkout.exercises.push({
+                exerciseId: exBankItem.id,
+                name: exBankItem.name,
+                category: exBankItem.category,
+                sets: [
+                    { reps: 10, weight: 20, lateralMode: 'bilateral', completed: false }
+                ]
+            });
+
+            saveLocalStorageData();
+            renderActiveWorkout();
+            closeModal('modal-select-exercise');
+            showToast(`Exercice ajouté !`);
+        }
+
+        function removeExerciseFromWorkout(exIndex) {
+            appData.activeWorkout.exercises.splice(exIndex, 1);
+            saveLocalStorageData();
+            renderActiveWorkout();
+        }
+
+        function addSetToExercise(exIndex) {
+            const ex = appData.activeWorkout.exercises[exIndex];
+            const lastSet = ex.sets.length > 0 ? ex.sets[ex.sets.length - 1] : { reps: 10, weight: 0, lateralMode: 'bilateral' };
+            
+            ex.sets.push({
+                reps: lastSet.reps,
+                weight: lastSet.weight,
+                lateralMode: lastSet.lateralMode || 'bilateral',
+                completed: false
+            });
+
+            saveLocalStorageData();
+            renderActiveWorkout();
+        }
+
+        function removeLastSet(exIndex) {
+            appData.activeWorkout.exercises[exIndex].sets.pop();
+            saveLocalStorageData();
+            renderActiveWorkout();
+        }
+
+        function updateSetVal(exIndex, setIndex, field, value) {
+            const numVal = value === '' ? null : parseFloat(value);
+            appData.activeWorkout.exercises[exIndex].sets[setIndex][field] = numVal;
+            saveLocalStorageData();
+        }
+
+        function cycleLateralMode(exIndex, setIndex) {
+            const set = appData.activeWorkout.exercises[exIndex].sets[setIndex];
+            const current = set.lateralMode || 'bilateral';
+            
+            if (current === 'bilateral') set.lateralMode = 'left';
+            else if (current === 'left') set.lateralMode = 'right';
+            else set.lateralMode = 'bilateral';
+
+            saveLocalStorageData();
+            renderActiveWorkout();
+        }
+
+        function toggleSetComplete(exIndex, setIndex) {
+            const set = appData.activeWorkout.exercises[exIndex].sets[setIndex];
+            set.completed = !set.completed;
+            saveLocalStorageData();
+            renderActiveWorkout();
+        }
+
+        function finishWorkout() {
+            if (!appData.activeWorkout) return;
+
+            const durationSec = Math.floor((Date.now() - appData.activeWorkout.startTime) / 1000);
+            const finishedWorkout = {
+                ...appData.activeWorkout,
+                endTime: Date.now(),
+                durationSeconds: durationSec
+            };
+
+            appData.workoutHistory.unshift(finishedWorkout);
+            appData.activeWorkout = null;
+            if (timerInterval) clearInterval(timerInterval);
+
+            saveLocalStorageData();
+            renderActiveWorkout();
+            renderWorkoutHistory();
+            showToast(`Séance enregistrée avec succès ! 🎉`, 'fa-trophy');
+            switchTab('history');
+        }
+
+        // --- HISTORIQUE DES SÉANCES ---
+        function renderWorkoutHistory() {
+            const container = document.getElementById('history-list');
+
+            if (!appData.workoutHistory || appData.workoutHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 glass-card rounded-2xl border border-dark-border text-dark-textMuted text-xs space-y-2">
+                        <i class="fa-regular fa-calendar-xmark text-2xl opacity-50"></i>
+                        <p>Aucune séance dans l'historique.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appData.workoutHistory.map(wk => {
+                const dateStr = new Date(wk.startTime).toLocaleDateString('fr-FR', {
+                    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                });
+                const durationMin = Math.round((wk.durationSeconds || 0) / 60);
+
+                let totalSets = 0;
+                wk.exercises.forEach(e => totalSets += e.sets.length);
+
+                return `
+                    <div onclick="openHistoryDetail('${wk.id}')" class="glass-card rounded-2xl p-4 border border-dark-border hover:border-brand-500/40 cursor-pointer transition space-y-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-sm text-white">${escapeHtml(wk.name)}</h3>
+                                <p class="text-[11px] text-dark-textMuted capitalize">${dateStr} • ${durationMin} min</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-brand-600/20 text-brand-400 border border-brand-500/20">
+                                ${wk.exercises.length} ex. • ${totalSets} séries
+                            </span>
+                        </div>
+                        ${wk.notes ? `<p class="text-xs text-gray-300 italic bg-dark-bg/40 p-2 rounded-lg border border-dark-border/40">"${escapeHtml(wk.notes)}"</p>` : ''}
+                        <div class="flex justify-between items-center text-xs text-brand-400 pt-1 font-semibold">
+                            <span>Voir les détails</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openHistoryDetail(wkId) {
+            const wk = appData.workoutHistory.find(w => w.id === wkId);
+            if (!wk) return;
+
+            document.getElementById('history-detail-title').textContent = wk.name;
+            document.getElementById('history-detail-date').textContent = new Date(wk.startTime).toLocaleDateString('fr-FR', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+
+            const content = document.getElementById('history-detail-content');
+
+            content.innerHTML = `
+                ${wk.notes ? `
+                    <div class="p-3 bg-dark-bg rounded-xl border border-dark-border text-xs text-gray-300">
+                        <strong class="text-white block mb-0.5">Notes :</strong> ${escapeHtml(wk.notes)}
+                    </div>
+                ` : ''}
+
+                <div class="space-y-3">
+                    ${wk.exercises.map((ex, idx) => `
+                        <div class="bg-dark-bg/60 rounded-xl p-3 border border-dark-border/60 space-y-2">
+                            <h4 class="font-bold text-xs text-white">${idx + 1}. ${escapeHtml(ex.name)} <span class="text-[10px] font-normal text-dark-textMuted">(${ex.category})</span></h4>
+                            <div class="space-y-1.5">
+                                ${ex.sets.map((set, sIdx) => {
+                                    const mode = set.lateralMode || 'bilateral';
+                                    return `
+                                    <div class="flex justify-between items-center text-xs bg-dark-card/50 px-2.5 py-1.5 rounded-lg text-gray-300">
+                                        <span>Série ${sIdx + 1}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 ${getLateralBadgeStyle(mode)}">
+                                                ${getLateralIcon(mode, ex.category)} ${getLateralLabel(mode, ex.category)}
+                                            </span>
+                                            <span class="font-mono text-white font-bold">${set.reps !== null && set.reps !== undefined ? set.reps : '-'} reps ${set.weight ? '@ ' + set.weight + ' kg' : ''}</span>
+                                        </div>
+                                    </div>
+                                `;}).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="deleteHistoryWorkout('${wk.id}')" class="w-full py-2.5 bg-rose-950/30 text-rose-400 border border-rose-900/40 rounded-xl text-xs font-semibold hover:bg-rose-900/50 transition">
+                        Supprimer cette séance
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('modal-history-detail').classList.remove('hidden');
+        }
+
+        function deleteHistoryWorkout(wkId) {
+            appData.workoutHistory = appData.workoutHistory.filter(w => w.id !== wkId);
+            saveLocalStorageData();
+            renderWorkoutHistory();
+            closeModal('modal-history-detail');
+            showToast('Séance supprimée', 'fa-trash-can', true);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
